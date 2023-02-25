@@ -1,17 +1,19 @@
 const { Schema, model } = require('mongoose');
 
-const IdcallSchema = Schema({
+const SocketSchema = Schema({
 
     point: {
         type: String,
         required: true,
         unique: true
+
     },
     socketId: {
         type: String,
         required: true
-    }
+    },
+
 });
 
 
-module.exports = model('IdCall', IdcallSchema);
+module.exports = model('Socket', SocketSchema);

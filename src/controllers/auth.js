@@ -1,9 +1,7 @@
 const { response } = require('express');
 const bcrypt = require('bcryptjs');
 const Usuario = require('../models/Usuario');
-const IdCall = require('../models/IdCall');
-//const { generarJWT } = require('../helpers/jwt');
-
+const Socket = require('../models/Socket');
 
 const crearUsuario = async (req, res = response) => {
 
@@ -27,14 +25,11 @@ const crearUsuario = async (req, res = response) => {
 
         await usuario.save();
 
-        // Generar JWT
-        //const token = await generarJWT(usuario.id, usuario.point);
-
         res.status(201).json({
             ok: true,
             uid: usuario.id,
             point: usuario.point,
-            // token
+
         })
 
     } catch (error) {
@@ -48,7 +43,7 @@ const crearUsuario = async (req, res = response) => {
 
 const loginUsuario = async (req, res = response) => {
 
-    const { point, password, socketId } = req.body;
+    const { point, password } = req.body;
 
     try {
         const usuario = await Usuario.findOne({ point });
@@ -68,37 +63,14 @@ const loginUsuario = async (req, res = response) => {
                 ok: false,
                 msg: 'Password incorrecto'
             });
-        }
-
-        // Generar JWT
-        //const token = await generarJWT(usuario.id, usuario.point);
-        // 
-
-        let idToCall = await IdCall.findOne({ point });
-
-        if (idToCall) {
-            idToCall.socketId = socketId;
-
-            await idToCall.save();
-            res.json({
-                ok: true,
-                uid: usuario.id,
-                point: usuario.point,
-                //token,
-                socketId
-            })
-            return
-        }
-
-        idToCall = new IdCall(req.body);
-        await idToCall.save();
+        };
 
         res.json({
             ok: true,
             uid: usuario.id,
             point: usuario.point,
             // token,
-            socketId
+            //socketId
         })
 
     } catch (error) {
@@ -110,25 +82,76 @@ const loginUsuario = async (req, res = response) => {
     }
 };
 
+const socketDb = async (req, res = response) => {
 
-// const revalidarToken = async (req, res = response) => {
-//     const { uid, point } = req;
-//     console.log(req)
-//     console.log('revalidarToken arriba')
-//     // Generar JWT
-//     const token = await generarJWT(uid, point);
-//     res.json({
-//         ok: true,
-//         uid, name,
-//         token
-//     })
-// }
+    console.log('llego al controlador');
+    console.log(req.body)
+    const { point, socketId } = req.body
 
+    try {
+        let idToCall = await Socket.findOne({ point });
+        console.log(idToCall)
+
+        if (idToCall) {
+            idToCall.socketId = socketId;
+
+            await idToCall.save();
+            res.json({
+                ok: true,
+                point,
+                socketId
+            })
+            return
+        }
+        else {
+            console.log('entro en else')
+
+            idToCall = new Socket({ point, socketId });
+            console.log(idToCall)
+            await idToCall.save();
+
+            res.json({
+                ok: true,
+                point,
+                socketId
+            })
+        }
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            ok: false,
+            msg: 'Por favor hable con el administrador'
+        });
+    }
+};
+
+const idToCall = async (req, res = response) => {
+    console.log('llego idToCall');
+    console.log(req.body)
+    const { point } = req.body
+    try {
+        let { socketId } = await Socket.findOne({ point });
+        res.json({
+            ok: true,
+            socketId,
+        })
+    }
+
+    catch (error) {
+        console.log(error);
+        res.status(500).json({
+            ok: false,
+            msg: 'vendendor no esta en linea'
+        });
+    }
+};
 
 
 
 module.exports = {
     crearUsuario,
     loginUsuario,
-    //revalidarToken
+    socketDb,
+    idToCall
+
 }
