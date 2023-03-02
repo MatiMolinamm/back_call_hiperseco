@@ -1,8 +1,8 @@
 const express = require("express");
-const http = require("http");
 const app = express();
-const server = http.createServer(app);
-const { dbConnection } = require('./database/config')
+const server = require("http").createServer(app);
+const cors = require('cors');
+const { dbConnection } = require('./database/config');
 require('dotenv').config();
 
 // Base de datos
@@ -12,39 +12,28 @@ dbConnection();
 app.use(express.json());
 
 // Middleware CORS
-app.use((req, res, next) => {
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader(
-        "Access-Control-Allow-Methods",
-        "OPTIONS, GET, POST, PUT, PATCH, DELETE"
-    );
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-
-    next();
-});
+app.use(cors())
 
 const io = require("socket.io")(server, {
     cors: {
-        origin: "http://localhost:3000",
+        origin: "*",
         methods: ["GET", "POST"]
     }
 });
 
 io.on("connection", (socket) => {
+    console.log('user conectado');
+    console.log(socket.id);
 
-    console.log('user conectado')
-    console.log(socket.id)
-
-    socket.emit("me", socket.id)
+    socket.emit("me", socket.id);
 
     socket.on("disconnect", () => {
         socket.broadcast.emit("callEnded")
-    })
+    });
 
-    socket.on("callUser", (data) => {
-        // console.log(data)
-        io.to(data.userToCall).emit("callUser", { signal: data.signalData, from: data.from, name: data.name })
-    })
+    socket.on("callUser", ({ userToCall, signalData, from, name }) => {
+        io.to(userToCall).emit("callUser", { signal: signalData, from, name });
+    });
 
     socket.on("answerCall", (data) => {
         io.to(data.to).emit("callAccepted", data.signal)

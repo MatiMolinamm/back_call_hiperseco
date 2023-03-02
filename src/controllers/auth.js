@@ -1,5 +1,6 @@
 const { response } = require('express');
 const bcrypt = require('bcryptjs');
+const { generarJWT } = require('../helpers/jwt');
 const Usuario = require('../models/Usuario');
 const Socket = require('../models/Socket');
 
@@ -25,11 +26,14 @@ const crearUsuario = async (req, res = response) => {
 
         await usuario.save();
 
+        // Generar JWT
+        const token = await generarJWT(usuario.id, usuario.point);
+
         res.status(201).json({
             ok: true,
             uid: usuario.id,
             point: usuario.point,
-
+            token
         })
 
     } catch (error) {
@@ -65,11 +69,14 @@ const loginUsuario = async (req, res = response) => {
             });
         };
 
+        // Generar JWT
+        const token = await generarJWT(usuario.id, usuario.point);
+
         res.json({
             ok: true,
             uid: usuario.id,
             point: usuario.point,
-            // token,
+            token
             //socketId
         })
 
@@ -83,14 +90,13 @@ const loginUsuario = async (req, res = response) => {
 };
 
 const socketDb = async (req, res = response) => {
-
-    console.log('llego al controlador');
-    console.log(req.body)
+    // console.log('llego al controlador');
+    // console.log(req.body)
     const { point, socketId } = req.body
 
     try {
         let idToCall = await Socket.findOne({ point });
-        console.log(idToCall)
+        // console.log(idToCall)
 
         if (idToCall) {
             idToCall.socketId = socketId;
@@ -104,10 +110,8 @@ const socketDb = async (req, res = response) => {
             return
         }
         else {
-            console.log('entro en else')
-
             idToCall = new Socket({ point, socketId });
-            console.log(idToCall)
+
             await idToCall.save();
 
             res.json({
@@ -126,8 +130,7 @@ const socketDb = async (req, res = response) => {
 };
 
 const idToCall = async (req, res = response) => {
-    console.log('llego idToCall');
-    console.log(req.body)
+
     const { point } = req.body
     try {
         let { socketId } = await Socket.findOne({ point });
@@ -146,12 +149,27 @@ const idToCall = async (req, res = response) => {
     }
 };
 
+const revalidarToken = async (req, res = response) => {
+
+    const { uid, point } = req.body;
+
+    // Generar JWT
+    const token = await generarJWT(uid, point);
+
+    res.json({
+        ok: true,
+        uid, point,
+        token
+    })
+}
+
 
 
 module.exports = {
     crearUsuario,
     loginUsuario,
     socketDb,
-    idToCall
+    idToCall,
+    revalidarToken
 
 }

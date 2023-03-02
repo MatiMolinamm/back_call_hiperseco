@@ -1,17 +1,11 @@
-/*
-    Rutas de Usuarios / Auth
-    host + /api/auth
-*/
+
 const { Router } = require('express');
 const { check } = require('express-validator');
 const { validarCampos } = require('../middlewares/validar-campos');
-const { crearUsuario, loginUsuario, socketDb, idToCall } = require('../controllers/auth');
-//const { validarJWT } = require('../middlewares/validar-jwt');
-
+const { crearUsuario, loginUsuario, socketDb, idToCall, revalidarToken } = require('../controllers/auth');
+const { validarJWT } = require('../middlewares/validar-jwt');
 
 const router = Router();
-
-
 
 router.post(
     '/new',
@@ -32,14 +26,9 @@ router.post(
     ],
     loginUsuario
 );
-
+router.post('/renew', validarJWT, revalidarToken);
 router.post('/socketDb', socketDb);
 router.post('/idToCall', idToCall);
-
-
-//router.get('/renew', validarJWT, revalidarToken);
-
-
 
 
 module.exports = router;
